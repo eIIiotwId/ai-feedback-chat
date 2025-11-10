@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat Insights</title>
+    <link rel="stylesheet" href="/static/app/style.css" />
+    <style>
+      .analysis-tab {
+        color: #6b7280;
+        background: transparent;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 500;
+        letter-spacing: 0.025em;
+        position: relative;
+      }
+
+      .analysis-tab.active.message-active {
+        color: #1e40af;
+        background: #dbeafe;
+        font-weight: 600;
+      }
+
+      .analysis-tab.active.conversation-active {
+        color: #166534;
+        background: #dcfce7;
+        font-weight: 600;
+      }
+
+      .analysis-tab:hover:not(.active) {
+        color: #374151;
+        transform: translateY(-1px);
+      }
+
+      /* Remove underline, using background instead */
+
+      /* Enhanced tab container */
+      .analysis-tabs {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Smooth real-time color transitions */
+      body {
+        transition: background 0.1s ease-out;
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      }
+
+      .page-background.message-mode {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      }
+
+      .page-background.conversation-mode {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      }
+
+      /* Apple-style scroll-snap gallery */
+      #analysis-content {
+        overflow-x: auto;
+        overflow-y: hidden; /* Prevent vertical scrolling - only horizontal swipe */
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+        min-height: 0; /* Allow shrinking */
+        /* Removed touch-action restriction to allow vertical scrolling to pass through */
+        pointer-events: auto; /* Allow touch events */
+      }
+
+      #analysis-content::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+      }
+
+      #swipe-container {
+        display: flex;
+        width: 200%; /* 2 panels = 200% width */
+        align-items: flex-start; /* Align panels to top, not stretch */
+        height: auto; /* Allow natural height */
+        min-height: 0; /* Allow shrinking */
+      }
+
+      .analysis-panel {
+        width: 50%; /* Each panel takes 50% of container */
+        flex-shrink: 0;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: fit-content; /* Size to content */
+        height: auto; /* Allow natural height */
+      }
+
+      /* Ensure rounded corners on desktop for white boxes */
+      @media (min-width: 640px) {
+        .analysis-panel .bg-white {
+          border-radius: 1.5rem !important; /* 24px for rounded-3xl on desktop */
+        }
+      }
+
+      /* Force time selector to right on all screen sizes */
+      #insights-content > div:first-child > div {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+      }
+
+      #insights-content > div:first-child > div > div:last-child {
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+      }
+
+      /* Ensure rest of page remains static */
+      body,
+      header,
+      .time-period-selector,
+      .analysis-tabs {
+        touch-action: auto; /* Normal touch behavior for rest of page */
+      }
+
+      /* Allow vertical scrolling on the main page, but horizontal only on analysis-content */
+      main {
+        overflow-y: visible; /* Let content flow naturally, body handles scrolling */
+        overflow-x: hidden; /* Prevent horizontal scroll on main */
+        touch-action: pan-y; /* Prioritize vertical scrolling */
+      }
+
+      /* Make body the scrollable container */
+      body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        touch-action: pan-y !important;
+        height: 100%;
+        position: relative;
+      }
+
+      html {
+        overflow-y: auto;
+        overflow-x: hidden;
+        touch-action: pan-y;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="page-background message-mode" style="overflow-y: auto; overflow-x: hidden">
+    <div style="min-height: 100vh">
+      <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between h-16">
+            <div class="flex items-center">
+              <a href="/" class="text-blue-600 hover:text-blue-800">Back to Chat</a>
+            </div>
+            <div class="flex items-center space-x-4">
+              <h1 class="text-xl font-semibold text-gray-900">AI Chat Insights</h1>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main
+        id="insights-main"
+        class="max-w-7xl mx-auto py-6 sm:py-12 px-3 sm:px-6 lg:px-8 pb-20 sm:pb-6"
+        style="min-height: auto"
+      >
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-8 hidden">
+          <div
+            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+          ></div>
+          <p class="mt-2 text-gray-600 text-sm sm:text-base">Loading insights...</p>
+        </div>
+
+        <!-- Error State -->
+        <div
+          id="error"
+          class="hidden bg-red-50 border border-red-200 rounded-md p-3 sm:p-4 mb-4 sm:mb-6"
+        >
+          <p class="text-red-800 text-sm sm:text-base">
+            Failed to load insights. Please try again.
+          </p>
+        </div>
+
+        <!-- Insights Content -->
+        <div id="insights-content" class="hidden">
+          <!-- Header Section -->
+          <div class="mb-3 sm:mb-6">
+            <div class="flex flex-row justify-between items-start gap-3 sm:gap-4">
+              <div class="flex-shrink">
+                <h1 class="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+                  Feedback Analytics
+                </h1>
+                <p class="text-xs sm:text-base text-gray-600">Insights from user feedback</p>
+              </div>
+              <div class="flex items-center justify-end space-x-2 items-start pt-2 flex-shrink-0">
+                <label
+                  for="time-period"
+                  class="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap"
+                  >Time:</label
+                >
+                <select
+                  id="time-period"
+                  class="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style="font-size: 16px"
+                >
+                  <option value="7">7 days</option>
+                  <option value="30" selected>30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="365">1 year</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analysis Type Selector -->
+          <div class="mb-3 sm:mb-6 flex justify-center">
+            <div
+              id="analysis-tabs-container"
+              class="analysis-tabs message-mode inline-flex bg-white rounded-lg p-1 shadow-sm w-full sm:w-auto"
+            >
+              <button
+                id="message-analysis-btn"
+                class="analysis-tab active px-3 sm:px-8 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-md flex-1 sm:flex-none text-center"
+              >
+                Messages
+              </button>
+              <button
+                id="conversation-analysis-btn"
+                class="analysis-tab px-3 sm:px-8 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-md flex-1 sm:flex-none text-center"
+              >
+                Conversations
+              </button>
+            </div>
+          </div>
+
+          <!-- Analysis Content -->
+          <div id="analysis-content" class="relative">
+            <!-- Swipe Container -->
+            <div id="swipe-container" class="flex transition-transform duration-300 ease-in-out">
+              <!-- Message Analysis Panel -->
+              <div id="message-analysis" class="analysis-panel w-full flex-shrink-0">
+                <!-- Message Feedback Stats -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">Total</h3>
+                    <p
+                      id="total-message-feedback"
+                      class="text-2xl sm:text-3xl font-bold text-blue-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">Avg</h3>
+                    <p
+                      id="avg-message-rating"
+                      class="text-2xl sm:text-3xl font-bold text-green-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">5★</h3>
+                    <p id="excellent-count" class="text-2xl sm:text-3xl font-bold text-yellow-600">
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">1-2★</h3>
+                    <p id="poor-count" class="text-2xl sm:text-3xl font-bold text-red-600">-</p>
+                  </div>
+                </div>
+
+                <!-- Message Rating Distribution -->
+                <div
+                  class="bg-white p-3 sm:p-6 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100 mb-3 sm:mb-6"
+                >
+                  <h3 class="text-sm sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+                    Rating Distribution
+                  </h3>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">5 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="bar-5"
+                            class="bg-yellow-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="count-5" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">4 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="bar-4"
+                            class="bg-green-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="count-4" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">3 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="bar-3"
+                            class="bg-blue-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="count-3" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">2 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="bar-2"
+                            class="bg-orange-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="count-2" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">1 Star</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="bar-1"
+                            class="bg-red-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="count-1" class="text-sm text-gray-600">0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Recent Message Feedback -->
+                <div
+                  class="bg-white p-3 sm:p-6 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100 mb-4 sm:mb-6"
+                >
+                  <h3 class="text-sm sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+                    Recent Feedback
+                  </h3>
+                  <div id="recent-message-feedback" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Conversation Analysis Panel -->
+              <div id="conversation-analysis" class="analysis-panel w-full flex-shrink-0">
+                <!-- Conversation Feedback Stats -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">Total</h3>
+                    <p
+                      id="total-conversation-feedback"
+                      class="text-2xl sm:text-3xl font-bold text-blue-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">Avg</h3>
+                    <p
+                      id="avg-conversation-rating"
+                      class="text-2xl sm:text-3xl font-bold text-green-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">5★</h3>
+                    <p
+                      id="excellent-conversation-count"
+                      class="text-2xl sm:text-3xl font-bold text-yellow-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100"
+                  >
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 mb-1">1-2★</h3>
+                    <p
+                      id="poor-conversation-count"
+                      class="text-2xl sm:text-3xl font-bold text-red-600"
+                    >
+                      -
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Conversation Rating Distribution -->
+                <div
+                  class="bg-white p-3 sm:p-6 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100 mb-3 sm:mb-6"
+                >
+                  <h3 class="text-sm sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+                    Rating Distribution
+                  </h3>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">5 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="conv-bar-5"
+                            class="bg-yellow-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="conv-count-5" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">4 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="conv-bar-4"
+                            class="bg-green-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="conv-count-4" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">3 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="conv-bar-3"
+                            class="bg-blue-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="conv-count-3" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">2 Stars</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="conv-bar-2"
+                            class="bg-orange-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="conv-count-2" class="text-sm text-gray-600">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium text-gray-700">1 Star</span>
+                      <div class="flex-1 mx-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                          <div
+                            id="conv-bar-1"
+                            class="bg-red-500 h-2 rounded-full"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                      </div>
+                      <span id="conv-count-1" class="text-sm text-gray-600">0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Recent Conversation Feedback -->
+                <div
+                  class="bg-white p-3 sm:p-6 rounded-xl sm:rounded-3xl shadow-sm border border-gray-100 mb-4 sm:mb-6"
+                >
+                  <h3 class="text-sm sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
+                    Recent Feedback
+                  </h3>
+                  <div id="recent-conversation-feedback" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      let currentPeriod = 30
+      let currentAnalysis = 'message' // 'message' or 'conversation'
+      let startX = 0
+      let startY = 0
+      let isDragging = false
+
+      async function loadInsights() {
+        const loadingEl = document.getElementById('loading')
+        const errorEl = document.getElementById('error')
+        const contentEl = document.getElementById('insights-content')
+
+        // Always start fresh: hide everything first - use style.display for immediate effect
+        if (loadingEl) {
+          loadingEl.classList.add('hidden')
+          loadingEl.style.display = 'none'
+        }
+        if (errorEl) {
+          errorEl.classList.add('hidden')
+          errorEl.style.display = 'none'
+        }
+        if (contentEl) {
+          contentEl.classList.add('hidden')
+          contentEl.style.display = 'none'
+        }
+
+        try {
+          // Show loading only
+          if (loadingEl) {
+            loadingEl.classList.remove('hidden')
+            loadingEl.style.display = 'block'
+          }
+
+          const response = await fetch(`/api/feedback/insights/?days=${currentPeriod}`)
+
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(`Failed to load insights: ${response.status} ${errorText}`)
+          }
+
+          const data = await response.json()
+          displayInsights(data)
+
+          // Hide loading, show content (error already hidden)
+          if (loadingEl) {
+            loadingEl.classList.add('hidden')
+            loadingEl.style.display = 'none'
+          }
+          if (errorEl) {
+            errorEl.classList.add('hidden')
+            errorEl.style.display = 'none'
+          }
+          if (contentEl) {
+            contentEl.classList.remove('hidden')
+            contentEl.style.display = 'block'
+          }
+        } catch (error) {
+          console.error('Error loading insights:', error)
+          // Hide loading, show error (content already hidden)
+          if (loadingEl) {
+            loadingEl.classList.add('hidden')
+            loadingEl.style.display = 'none'
+          }
+          if (contentEl) {
+            contentEl.classList.add('hidden')
+            contentEl.style.display = 'none'
+          }
+          if (errorEl) {
+            errorEl.classList.remove('hidden')
+            errorEl.style.display = 'block'
+          }
+        }
+      }
+
+      function switchAnalysis(type) {
+        currentAnalysis = type
+        const analysisContent = document.getElementById('analysis-content')
+        const body = document.body
+        const messageBtn = document.getElementById('message-analysis-btn')
+        const conversationBtn = document.getElementById('conversation-analysis-btn')
+        const mainEl = document.getElementById('insights-main')
+
+        // Add transitioning class for smooth color change
+        body.classList.add('transitioning')
+
+        if (type === 'message') {
+          // Scroll to message analysis (first panel)
+          analysisContent.scrollTo({ left: 0, behavior: 'smooth' })
+          messageBtn.classList.add('active')
+          conversationBtn.classList.remove('active')
+
+          // Update page background colors
+          setTimeout(() => {
+            body.classList.remove('transitioning', 'conversation-mode')
+            body.classList.add('message-mode')
+            // Adjust main container height based on active panel
+            adjustMainHeight()
+          }, 300)
+        } else {
+          // Scroll to conversation analysis (second panel)
+          analysisContent.scrollTo({ left: analysisContent.scrollWidth / 2, behavior: 'smooth' })
+          messageBtn.classList.remove('active')
+          conversationBtn.classList.add('active')
+
+          // Update page background colors
+          setTimeout(() => {
+            body.classList.remove('transitioning', 'message-mode')
+            body.classList.add('conversation-mode')
+            // Adjust main container height based on active panel
+            adjustMainHeight()
+          }, 300)
+        }
+      }
+
+      function adjustMainHeight() {
+        const mainEl = document.getElementById('insights-main')
+        const analysisContent = document.getElementById('analysis-content')
+        if (!mainEl || !analysisContent) return
+
+        // Wait for scroll animation to complete, then measure active panel
+        setTimeout(() => {
+          const panels = analysisContent.querySelectorAll('.analysis-panel')
+          let activePanel = null
+
+          // Determine which panel is currently visible based on scroll position
+          const scrollLeft = analysisContent.scrollLeft
+          const panelWidth = analysisContent.scrollWidth / 2
+
+          if (scrollLeft < panelWidth / 2) {
+            // First panel (messages) is visible
+            activePanel = panels[0]
+          } else {
+            // Second panel (conversations) is visible
+            activePanel = panels[1]
+          }
+
+          if (activePanel) {
+            // Get the actual height of the active panel's content
+            // Measure the panel's actual rendered height - use scrollHeight for accurate content height
+            const panelHeight = activePanel.scrollHeight
+
+            // Set the analysis-content container height to exactly match the active panel
+            // This ensures the container doesn't maintain height from the taller panel
+            analysisContent.style.height = `${panelHeight}px`
+            analysisContent.style.minHeight = `${panelHeight}px`
+            analysisContent.style.maxHeight = `${panelHeight}px`
+
+            // Also set the swipe-container height to match to prevent extra space
+            const swipeContainer = document.getElementById('swipe-container')
+            if (swipeContainer) {
+              swipeContainer.style.height = `${panelHeight}px`
+              swipeContainer.style.minHeight = `${panelHeight}px`
+              swipeContainer.style.maxHeight = `${panelHeight}px`
+            }
+
+            // Calculate the total height needed for main (header + content + padding)
+            const headerHeight = document.querySelector('nav')?.offsetHeight || 0
+            const totalHeight = headerHeight + panelHeight + 48 // 48px for padding (py-3 sm:py-6)
+
+            // Set main container height to match content exactly
+            mainEl.style.height = 'auto'
+            mainEl.style.minHeight = 'auto'
+            mainEl.style.maxHeight = 'none'
+
+            // Force a reflow to ensure proper height calculation
+            void mainEl.offsetHeight
+            void analysisContent.offsetHeight
+            void activePanel.offsetHeight
+            if (swipeContainer) {
+              void swipeContainer.offsetHeight
+            }
+          }
+        }, 350) // Slightly after the scroll animation (300ms)
+      }
+
+      // Smooth real-time color transitions (like Apple's website)
+      function handleScroll() {
+        const analysisContent = document.getElementById('analysis-content')
+        const body = document.body
+        const scrollLeft = analysisContent.scrollLeft
+        const panelWidth = analysisContent.scrollWidth / 2
+
+        // Calculate scroll progress (0 = message, 1 = conversation)
+        const progress = Math.min(1, Math.max(0, scrollLeft / panelWidth))
+
+        // Interpolate between blue and green colors
+        const blueStart = { r: 219, g: 234, b: 254 } // #dbeafe
+        const blueEnd = { r: 191, g: 219, b: 254 } // #bfdbfe
+        const greenStart = { r: 220, g: 252, b: 231 } // #dcfce7
+        const greenEnd = { r: 187, g: 247, b: 208 } // #bbf7d0
+
+        // Calculate interpolated colors
+        const startR = Math.round(blueStart.r + (greenStart.r - blueStart.r) * progress)
+        const startG = Math.round(blueStart.g + (greenStart.g - blueStart.g) * progress)
+        const startB = Math.round(blueStart.b + (greenStart.b - blueStart.b) * progress)
+
+        const endR = Math.round(blueEnd.r + (greenEnd.r - blueEnd.r) * progress)
+        const endG = Math.round(blueEnd.g + (greenEnd.g - blueEnd.g) * progress)
+        const endB = Math.round(blueEnd.b + (greenEnd.b - blueEnd.b) * progress)
+
+        // Apply the interpolated gradient
+        body.style.background = `linear-gradient(135deg, rgb(${startR}, ${startG}, ${startB}) 0%, rgb(${endR}, ${endG}, ${endB}) 100%)`
+
+        // Update tab states based on scroll position
+        if (scrollLeft < panelWidth / 2) {
+          if (currentAnalysis !== 'message') {
+            currentAnalysis = 'message'
+            updateTabStates()
+          }
+        } else {
+          if (currentAnalysis !== 'conversation') {
+            currentAnalysis = 'conversation'
+            updateTabStates()
+            // Adjust height when switching via scroll
+            adjustMainHeight()
+          }
+        }
+      }
+
+      function updateTabStates() {
+        const messageBtn = document.getElementById('message-analysis-btn')
+        const conversationBtn = document.getElementById('conversation-analysis-btn')
+
+        // Remove all active classes first
+        messageBtn.classList.remove('active', 'message-active', 'conversation-active')
+        conversationBtn.classList.remove('active', 'message-active', 'conversation-active')
+
+        if (currentAnalysis === 'message') {
+          messageBtn.classList.add('active', 'message-active')
+        } else {
+          conversationBtn.classList.add('active', 'conversation-active')
+        }
+      }
+
+      function displayInsights(data) {
+        // Message feedback stats
+        document.getElementById('total-message-feedback').textContent =
+          data.message_feedback.total_feedback || 0
+        document.getElementById('avg-message-rating').textContent = data.message_feedback.avg_rating
+          ? data.message_feedback.avg_rating.toFixed(1)
+          : '0.0'
+        document.getElementById('excellent-count').textContent =
+          data.message_feedback.excellent_count || 0
+        document.getElementById('poor-count').textContent =
+          (data.message_feedback.poor_count || 0) + (data.message_feedback.very_poor_count || 0)
+
+        // Message rating distribution
+        const messageTotal = data.message_feedback.total_feedback || 1
+        const messageCounts = [
+          data.message_feedback.very_poor_count || 0,
+          data.message_feedback.poor_count || 0,
+          data.message_feedback.fair_count || 0,
+          data.message_feedback.good_count || 0,
+          data.message_feedback.excellent_count || 0,
+        ]
+
+        for (let i = 1; i <= 5; i++) {
+          const count = messageCounts[i - 1]
+          const percentage = (count / messageTotal) * 100
+          document.getElementById(`bar-${i}`).style.width = `${percentage}%`
+          document.getElementById(`count-${i}`).textContent = count
+        }
+
+        // Conversation feedback stats
+        document.getElementById('total-conversation-feedback').textContent =
+          data.conversation_feedback.total_feedback || 0
+        document.getElementById('avg-conversation-rating').textContent = data.conversation_feedback
+          .avg_overall_rating
+          ? data.conversation_feedback.avg_overall_rating.toFixed(1)
+          : '0.0'
+
+        // Conversation rating counts
+        document.getElementById('excellent-conversation-count').textContent =
+          data.conversation_feedback.excellent_count || 0
+        document.getElementById('poor-conversation-count').textContent =
+          (data.conversation_feedback.poor_count || 0) +
+          (data.conversation_feedback.very_poor_count || 0)
+
+        // Conversation rating distribution
+        const convTotal = data.conversation_feedback.total_feedback || 1
+        const convCounts = [
+          data.conversation_feedback.very_poor_count || 0,
+          data.conversation_feedback.poor_count || 0,
+          data.conversation_feedback.fair_count || 0,
+          data.conversation_feedback.good_count || 0,
+          data.conversation_feedback.excellent_count || 0,
+        ]
+
+        for (let i = 1; i <= 5; i++) {
+          const count = convCounts[i - 1]
+          const percentage = (count / convTotal) * 100
+          document.getElementById(`conv-bar-${i}`).style.width = `${percentage}%`
+          document.getElementById(`conv-count-${i}`).textContent = count
+        }
+
+        // Recent feedback
+        displayRecentMessageFeedback(data.message_feedback.recent_feedback || [])
+        displayRecentConversationFeedback(data.conversation_feedback.recent_feedback || [])
+
+        // Adjust main height after content is loaded - wait for layout to settle
+        setTimeout(() => {
+          adjustMainHeight()
+        }, 200)
+      }
+
+      function displayRecentMessageFeedback(feedback) {
+        const container = document.getElementById('recent-message-feedback')
+        if (feedback.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-xs sm:text-sm">No recent feedback</p>'
+          return
+        }
+
+        container.innerHTML = feedback
+          .map(
+            (item) => `
+                <div class="border-l-4 border-blue-500 pl-2 sm:pl-3 py-2 rounded-r bg-blue-50/30 mb-2">
+                    <div class="flex items-center justify-between flex-wrap gap-1">
+                        <span class="text-xs sm:text-sm font-medium text-gray-900">Message #${item.message}</span>
+                        <span class="text-xs sm:text-sm text-gray-600 font-semibold">${item.rating}/5 ⭐</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        Conv #${item.conversation_id}${item.conversation_title ? `: ${item.conversation_title}` : ''}
+                    </div>
+                    ${item.comment ? `<p class="text-xs sm:text-sm text-gray-700 mt-1 italic">"${item.comment}"</p>` : ''}
+                    <p class="text-xs text-gray-400 mt-1">${new Date(item.created_at).toLocaleString()}</p>
+                </div>
+            `
+          )
+          .join('')
+      }
+
+      function displayRecentConversationFeedback(feedback) {
+        const container = document.getElementById('recent-conversation-feedback')
+        if (feedback.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-xs sm:text-sm">No recent feedback</p>'
+          return
+        }
+
+        container.innerHTML = feedback
+          .map(
+            (item) => `
+                <div class="border-l-4 border-green-500 pl-2 sm:pl-3 py-2 rounded-r bg-green-50/30 mb-2">
+                    <div class="flex items-center justify-between flex-wrap gap-1">
+                        <span class="text-xs sm:text-sm font-medium text-gray-900">Conv #${item.conversation}${item.conversation_title ? `: ${item.conversation_title}` : ''}</span>
+                        <span class="text-xs sm:text-sm text-gray-600 font-semibold">${item.overall_rating}/5 ⭐</span>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-1">
+                        Help: ${item.helpfulness_rating}/5 • Acc: ${item.accuracy_rating}/5
+                    </div>
+                    ${item.comment ? `<p class="text-xs sm:text-sm text-gray-700 mt-1 italic">"${item.comment}"</p>` : ''}
+                    <p class="text-xs text-gray-400 mt-1">${new Date(item.created_at).toLocaleString()}</p>
+                </div>
+            `
+          )
+          .join('')
+      }
+
+      // Event listeners
+
+      document.getElementById('message-analysis-btn').addEventListener('click', () => {
+        switchAnalysis('message')
+      })
+
+      document.getElementById('conversation-analysis-btn').addEventListener('click', () => {
+        switchAnalysis('conversation')
+      })
+
+      // Add swipe functionality ONLY to the analysis content area
+      const analysisContent = document.getElementById('analysis-content')
+
+      function attachScrollListeners(element, name) {
+        if (element) {
+          // Native scroll events for smooth snap behavior
+          element.addEventListener('scroll', handleScroll, { passive: true })
+
+          // Add touch event handling to detect vertical vs horizontal gestures
+          // This allows vertical scrolling to pass through to the body
+          let touchStartX = 0
+          let touchStartY = 0
+
+          element.addEventListener(
+            'touchstart',
+            (e) => {
+              if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX
+                touchStartY = e.touches[0].clientY
+              }
+            },
+            { passive: true }
+          )
+
+          element.addEventListener(
+            'touchmove',
+            (e) => {
+              if (e.touches.length === 1 && touchStartX !== 0 && touchStartY !== 0) {
+                const deltaX = Math.abs(e.touches[0].clientX - touchStartX)
+                const deltaY = Math.abs(e.touches[0].clientY - touchStartY)
+
+                // If vertical movement is significantly more than horizontal,
+                // allow it to bubble up to body for vertical scrolling
+                if (deltaY > deltaX * 1.5 && deltaY > 10) {
+                  // Vertical scroll - let it pass through by not preventing default
+                  // The body will handle the vertical scroll
+                }
+              }
+            },
+            { passive: true }
+          )
+
+          element.addEventListener(
+            'touchend',
+            () => {
+              touchStartX = 0
+              touchStartY = 0
+            },
+            { passive: true }
+          )
+        }
+      }
+
+      // Attach ONLY to the analysis content area (not the entire page)
+      attachScrollListeners(analysisContent, 'analysis-content')
+
+      // Add event listener for time period selector
+      const timePeriodSelect = document.getElementById('time-period')
+      if (timePeriodSelect) {
+        timePeriodSelect.addEventListener('change', (e) => {
+          currentPeriod = parseInt(e.target.value)
+          loadInsights()
+        })
+      }
+
+      // Initialize the page state
+      function initializePage() {
+        // Ensure loading and error are hidden on page load - use both class and style
+        const loadingEl = document.getElementById('loading')
+        const errorEl = document.getElementById('error')
+        const contentEl = document.getElementById('insights-content')
+
+        // Explicitly set initial state with both class and inline style
+        if (loadingEl) {
+          loadingEl.classList.add('hidden')
+          loadingEl.style.display = 'none'
+        }
+        if (errorEl) {
+          errorEl.classList.add('hidden')
+          errorEl.style.display = 'none'
+        }
+        if (contentEl) {
+          contentEl.classList.add('hidden')
+          contentEl.style.display = 'none'
+        }
+
+        // Set initial analysis state
+        currentAnalysis = 'message'
+        updateTabStates()
+
+        // Set initial page background
+        document.body.classList.add('message-mode')
+
+        // Small delay to ensure DOM is ready, then load insights
+        setTimeout(() => {
+          loadInsights()
+        }, 100)
+      }
+
+      // Adjust height when scrolling between panels - set up after DOM is ready
+      function setupScrollListener() {
+        const analysisContent = document.getElementById('analysis-content')
+        if (analysisContent) {
+          analysisContent.addEventListener('scroll', () => {
+            // Debounce the height adjustment
+            clearTimeout(analysisContent._heightAdjustTimeout)
+            analysisContent._heightAdjustTimeout = setTimeout(() => {
+              adjustMainHeight()
+            }, 100)
+          })
+        }
+      }
+
+      // Initialize the page when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          initializePage()
+          setupScrollListener()
+        })
+      } else {
+        initializePage()
+        setupScrollListener()
+      }
+    </script>
+  </body>
+</html>

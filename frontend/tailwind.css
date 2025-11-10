@@ -1,0 +1,652 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Rename input styling for better visibility */
+.rename-input {
+  color: #1f2937 !important; /* gray-800 */
+  background-color: #ffffff !important; /* white */
+}
+
+/* Simple components */
+.btn {
+  @apply px-3 py-2 rounded-md text-sm font-medium;
+}
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50;
+}
+.input {
+  @apply w-full border rounded-md p-2;
+}
+.textarea {
+  @apply w-full border rounded-md p-2;
+}
+.msg-user {
+  @apply bg-blue-50 border border-blue-200;
+}
+.msg-ai {
+  @apply bg-gray-50 border border-gray-200;
+}
+.btn-secondary {
+  @apply bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50;
+}
+
+/* Custom cursor styles */
+.typing-cursor-wrapper {
+  display: inline-block;
+  width: 0.6em;
+  min-width: 0.6em;
+  max-width: 0.6em;
+  height: 1em;
+  position: relative;
+  vertical-align: baseline;
+  /* Prevent layout shift */
+  box-sizing: border-box;
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  will-change: contents;
+}
+
+.typing-cursor {
+  color: #000;
+  font-weight: bold;
+  animation: blink 1s infinite;
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0.6em;
+  height: 1em;
+  line-height: 1em;
+  /* Prevent layout shift */
+  box-sizing: border-box;
+  /* Prevent reflow during animation */
+  will-change: opacity;
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+/* Ensure typing messages have stable layout */
+.typing-message {
+  min-height: 1.2em;
+  contain: layout style;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Custom input cursor */
+.rename-input {
+  caret-color: #000 !important;
+  cursor: text !important;
+}
+
+/* Failed message styling */
+.failed-message {
+  border-left: 4px solid #ef4444;
+  background-color: #fef2f2;
+}
+
+.retry-btn {
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Thinking animation */
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.thinking-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #6b7280;
+  animation: thinking 1.4s infinite ease-in-out both;
+}
+
+.thinking-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes thinking {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+/* Mobile-specific CSS improvements */
+@media (max-width: 767px) {
+  /* Larger touch targets for mobile (minimum 44px) */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+
+  /* Mobile button text sizes */
+  .btn-primary,
+  .btn-secondary {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+
+  /* Mobile textarea improvements - prevent resize */
+  .textarea {
+    resize: none;
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  /* Mobile input improvements */
+  .input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  /* Better spacing for touch interactions */
+  .msg-user,
+  .msg-ai {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Larger touch targets for rating buttons */
+  .rating-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+
+  /* Larger touch targets for submit buttons */
+  .submit-feedback-btn,
+  .retry-btn {
+    min-height: 44px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  /* Better spacing for conversation list items */
+  [data-cid] {
+    min-height: 60px;
+    padding: 16px;
+  }
+
+  /* Mobile header buttons */
+  header button,
+  header a {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Smaller text sizes for mobile */
+  h1 {
+    font-size: 18px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  /* Better spacing for mobile chat messages */
+  #chat-scroll {
+    padding: 12px;
+  }
+
+  /* Mobile form improvements */
+  #composer {
+    padding: 12px;
+  }
+
+  /* Prevent textarea resize on mobile */
+  textarea {
+    resize: none !important;
+    font-size: 16px !important; /* Prevents zoom on iOS when focusing */
+  }
+
+  /* Prevent zoom on rating buttons and comment inputs */
+  .rating-btn,
+  #comment-section input,
+  #comment-section textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  /* Better touch targets for search input */
+  #isolated-search-input {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+  }
+
+  /* Mobile conversation title improvements */
+  .conversation-title {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Dark theme for mobile chat (ChatGPT-like) */
+  .mobile-chat-dark {
+    background-color: #212121 !important;
+  }
+
+  .mobile-chat-dark #chat-scroll {
+    background-color: #212121 !important;
+    color: #ececec;
+  }
+
+  .mobile-chat-dark header {
+    background-color: #212121 !important;
+    border-color: #3a3a3a !important;
+  }
+
+  .mobile-chat-dark header h1,
+  .mobile-chat-dark header button,
+  .mobile-chat-dark header a {
+    color: #ececec !important;
+  }
+
+  .mobile-chat-dark .msg-user {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+    color: #ececec;
+  }
+
+  .mobile-chat-dark .msg-ai {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+    color: #ececec;
+  }
+
+  .mobile-chat-dark .msg-user .text-gray-500,
+  .mobile-chat-dark .msg-ai .text-gray-500 {
+    color: #9ca3af !important;
+  }
+
+  .mobile-chat-dark .msg-user .text-gray-600,
+  .mobile-chat-dark .msg-ai .text-gray-600 {
+    color: #d1d5db !important;
+  }
+
+  .mobile-chat-dark #composer {
+    background-color: #212121 !important;
+    border-color: #3a3a3a !important;
+  }
+
+  .mobile-chat-dark #input {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+    color: #ececec !important;
+  }
+
+  .mobile-chat-dark #input::placeholder {
+    color: #9ca3af !important;
+  }
+
+  .mobile-chat-dark .thinking-dots span {
+    background-color: #9ca3af !important;
+  }
+
+  .mobile-chat-dark .text-gray-500 {
+    color: #9ca3af !important;
+  }
+
+  .mobile-chat-dark .text-gray-600 {
+    color: #d1d5db !important;
+  }
+
+  .mobile-chat-dark .text-gray-800 {
+    color: #ececec !important;
+  }
+
+  /* Dark theme for mobile conversations list */
+  .mobile-conversations-dark {
+    background-color: #212121 !important;
+  }
+
+  .mobile-conversations-dark header {
+    background-color: #212121 !important;
+    border-color: #3a3a3a !important;
+  }
+
+  .mobile-conversations-dark header h1,
+  .mobile-conversations-dark header button,
+  .mobile-conversations-dark header a {
+    color: #ececec !important;
+  }
+
+  .mobile-conversations-dark ul {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+  }
+
+  .mobile-conversations-dark .conversation-item {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+    color: #ececec !important;
+  }
+
+  .mobile-conversations-dark .conversation-item:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  .mobile-conversations-dark .conversation-item.bg-blue-50 {
+    background-color: #1e3a5f !important;
+  }
+
+  .mobile-conversations-dark .conversation-title {
+    color: #ececec !important;
+  }
+
+  .mobile-conversations-dark .conversation-title .text-gray-500 {
+    color: #9ca3af !important;
+  }
+
+  .mobile-conversations-dark .btn-primary {
+    background-color: #3b82f6 !important;
+    color: white !important;
+  }
+
+  .mobile-conversations-dark #isolated-search-input {
+    background-color: #2d2d2d !important;
+    border-color: #3a3a3a !important;
+    color: #ececec !important;
+  }
+
+  .mobile-conversations-dark #isolated-search-input::placeholder {
+    color: #9ca3af !important;
+  }
+
+  /* Prevent text selection on conversation items */
+  .conversation-item {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Thinner input box on mobile */
+  .mobile-chat-dark #input {
+    min-height: 44px;
+    line-height: 1.4;
+    padding: 10px 60px 10px 12px;
+  }
+
+  /* Auto-resize textarea */
+  #input {
+    overflow-y: auto;
+    word-wrap: break-word;
+  }
+
+  /* Ensure input box is above browser navigation bar - absolutely positioned */
+  .mobile-chat-dark #composer {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 20 !important;
+    background-color: #212121 !important;
+    border-top: 1px solid #3a3a3a !important;
+    padding: 0.5rem !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem)) !important;
+  }
+
+  /* Use dynamic viewport height to account for browser UI - fixed position to prevent scrolling */
+  .mobile-chat-dark {
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Ensure chat scroll area doesn't overflow and is the only scrollable area */
+  .mobile-chat-dark #chat-scroll {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  /* Ensure header stays fixed and visible - never moves */
+  .mobile-chat-dark header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 30 !important;
+    flex-shrink: 0 !important;
+    background-color: #212121 !important;
+    border-color: #3a3a3a !important;
+  }
+
+  /* Ensure composer stays fixed at bottom - above keyboard when open */
+  .mobile-chat-dark #composer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 30 !important;
+    /* Ensure it's above the keyboard */
+    transform: translateZ(0) !important;
+  }
+
+  /* When keyboard is open, ensure input is visible */
+  .mobile-chat-dark.keyboard-open #composer {
+    bottom: 0 !important;
+    /* Position above keyboard using visual viewport */
+  }
+
+  /* Ensure input box itself is visible and scrollable */
+  .mobile-chat-dark #input {
+    position: relative !important;
+    z-index: 31 !important;
+    height: 60px !important;
+    max-height: 60px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    resize: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Ensure textarea scrolls internally, not the page */
+  .mobile-chat-dark #input:focus {
+    overflow-y: auto !important;
+  }
+
+  /* Ensure chat scroll is fixed between header and composer */
+  .mobile-chat-dark #chat-scroll {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 10 !important;
+  }
+
+  /* Prevent container from scrolling */
+  .mobile-chat-dark {
+    overflow: hidden !important;
+    -webkit-overflow-scrolling: none !important;
+    touch-action: pan-y !important; /* Allow vertical scrolling in chat area */
+  }
+
+  /* Prevent scrolling below input when keyboard is open */
+  .mobile-chat-dark.keyboard-open {
+    overflow: hidden !important;
+    touch-action: pan-y !important; /* Allow vertical scrolling in chat area */
+  }
+
+  /* Ensure rating and submit buttons are clickable on mobile */
+  .mobile-chat-dark .rating-btn,
+  .mobile-chat-dark .submit-feedback-btn,
+  .mobile-chat-dark .retry-btn {
+    touch-action: manipulation !important; /* Enable fast tap, disable double-tap zoom */
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3); /* Blue tap highlight */
+    min-height: 44px !important; /* Ensure touch target is large enough */
+    min-width: 44px !important;
+    position: relative !important;
+    z-index: 50 !important; /* Ensure buttons are above other elements */
+    cursor: pointer !important;
+  }
+
+  /* Ensure comment section is visible and clickable when shown */
+  .mobile-chat-dark [id^='comment-section-'] {
+    position: relative !important;
+    z-index: 40 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Prevent window scrolling when keyboard is open */
+  body.mobile-chat-active,
+  html.mobile-chat-active {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none !important;
+  }
+
+  /* Ensure header never moves - use transform for better performance */
+  .mobile-chat-dark header {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  /* Ensure composer never moves */
+  .mobile-chat-dark #composer {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .mobile-chat-dark.keyboard-open #chat-scroll {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Remove any extra margins/padding that could cause white space */
+  .mobile-chat-dark #composer > div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Prevent body scrolling completely on mobile */
+  body.mobile-chat-active {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Long-press menu for conversations */
+  .conversation-context-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .conversation-context-menu-content {
+    background-color: #2d2d2d;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 16px;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .conversation-context-menu-item {
+    padding: 16px;
+    color: #ececec;
+    font-size: 16px;
+    border-bottom: 1px solid #3a3a3a;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .conversation-context-menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .conversation-context-menu-item.delete {
+    color: #ef4444;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
