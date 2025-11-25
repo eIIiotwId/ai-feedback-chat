@@ -249,5 +249,5 @@ Tests are located in the `tests/` directory and use pytest.
 
 ## License
 
-Copyright (c) 2024 Elliot Waldvogel. All rights reserved.
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
 
