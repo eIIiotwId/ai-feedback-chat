@@ -1,5 +1,12 @@
 # AI Chat Application
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)
+![Django](https://img.shields.io/badge/Django-5.0-green.svg)
+![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-blue.svg)
+![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
+
 A modern, full-stack chat application that enables users to interact with an AI assistant powered by Google Gemini. The application features comprehensive feedback collection, analytics dashboards, and a responsive design optimized for both desktop and mobile devices.
 
 ## Features
